@@ -6,3 +6,6 @@
 # Datasource local storage ignored files
 /dataSources/
 /dataSources.local.xml
+
+#secret key
+elite-campus-472819-d1-78a4c13a30a7.json
