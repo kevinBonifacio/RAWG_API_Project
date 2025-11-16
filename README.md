@@ -1,49 +1,51 @@
 # RAWG_API_Project
 
-This project fetches video game data from the **RAWG API**, processes it, and uploads the data as CSV files to a Google Cloud Storage bucket. It is built as a **Google Cloud Function** for automated and scalable execution.
+This project is a local web application designed to analyze video game trends using data from the RAWG Video Games Database API.
 
-## Features
+It uses a two-part architecture:
 
-- Fetches top video games data (by user-added count) from RAWG API.
-- Extracts relevant information:
-    - Game name
-    - Release date
-    - Rating
-    - Genres
-    - Platforms
-    - Added count (popularity metric)
-- Converts the data to a **pandas DataFrame** and saves it as a CSV.
-- Uploads the CSV to a **Google Cloud Storage** bucket.
-- Logs progress and errors for debugging.
+- Python Backend: Responsible for fetching data from the RAWG API (via a Cloud Function), storing it, and serving the final CSV files over a local HTTP server.
+- React Frontend: A client-side dashboard that fetches the data from the local Python server and visualizes it using interactive charts.
 
-## How It Works
+## Project Goal
 
-1. **Fetch Data from RAWG API**  
-   The function fetches 25 pages of top-added games from RAWG (40 games per page), using your API key.
+The goal of this project is to explore how different video game genres and platforms are trending. It analyzes details such as release date, rating, genres, and platform popularity (based on how often games are added to user libraries).
 
-2. **Transform Data**  
-   The raw JSON data is transformed into a structured pandas DataFrame with selected fields.
+## Project Architecture
 
-3. **Save as CSV**  
-   A CSV file is created with the current date in `/tmp` (temporary storage for Cloud Functions).
+This application runs as two separate, communicating services on your local machine.
 
-4. **Upload to Google Cloud Storage**  
-   The CSV is uploaded to the configured bucket.
+1. **Backend Data Server:**
+    - A custom Python script (`backend/server.py`) serves static CSV files from the `backend/rawData/` directory.
 
-5. **Return Response**  
-   The function returns a JSON response with the number of games fetched and the status of the upload.
+2. **Frontend React App:**
+    - A standard React application (`frontend/`) that runs a development server.
+    - It fetches all historical CSV files from `http://localhost:8000`.
+    - It uses Papa Parse to parse the CSV text into JSON.
+    - It uses Recharts to render the final visualizations.
 
-## Setup
+## How to Run the Application
 
-1. **Google Cloud Configuration**
-    - Enable Cloud Functions and Cloud Storage.
-    - Create a bucket for storing the CSV files.
+You must run two separate terminal windows simultaneously.
 
-2. **Environment Variables**
-    - `API_KEY` – your RAWG API key.
-    - `BUCKET_NAME` – your Cloud Storage bucket name.
+### **Step 1: Data Workflow (Prerequisite)**
 
-3. **Dependencies**  
-   Install required Python packages:
-   ```bash
-   py -m pip install requests google-cloud-storage pandas flask
+This application reads data, it does not fetch it from the API. You must ensure your data is present locally first.
+
+1. **Run Cloud Function:** Ensure your Google Cloud Function (`main.py`) has been running and saving data to your GCS bucket.
+2. **Download Data:** Run your local Python script (`download_csvs.py`) to download all the CSV files from Google Cloud Storage into the `backend/rawData/` folder.
+
+### **Step 2: Run the Backend (Data Server)**
+
+1. Navigate to the Backend directory `cd backend`
+2. Run the server script `py -m server.py`
+
+*(Keep this terminal running.)*
+
+### **Step 3: Run the Frontend (React Dashboard)**
+
+1. In a new terminal navigate to the Frontend directory `cd frontend`
+2. Start the React app `npm run dev`
+
+
+
