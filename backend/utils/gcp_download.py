@@ -3,7 +3,8 @@ from google.cloud import storage
 BUCKET_NAME = "rawg-api-storage-bonifacio"
 DESTINATION_FOLDER = "C:/Users/kevin/IdeaProjects/RAWG_API_Project/rawData"
 
-def download_csv_files():
+
+def download_csvs():
     client = storage.Client()
     bucket = client.get_bucket(BUCKET_NAME)
 
@@ -15,4 +16,5 @@ def download_csv_files():
             blob.download_to_filename(local_path)
             print(f"Downloaded {blob.name} → {local_path}")
 
-download_csv_files()
+
+download_csvs()
