@@ -1,5 +1,3 @@
-// src/components/TemporalLineChart.jsx
-
 import React from 'react';
 import {
     LineChart,
@@ -13,19 +11,31 @@ import {
 } from 'recharts';
 
 /**
- * Renders a stacked line chart showing the total added count of top genres over time.
- * @param {Array<object>} data - Temporal data (grouped by month).
- * @param {Array<string>} topGenres - List of top 5 genre names to plot.
+ * Renders a line chart showing the daily activity count of the top genres
+ * over the 30-day collection window.
+ * @param {Array<object>} data - Temporal data (grouped by collection date).
+ * @param {Array<string>} topGenres - List of top 8 genre names to plot.
  */
 function TemporalLineChart({ data, topGenres }) {
     if (!data || data.length === 0) {
-        return <div style={{ textAlign: 'center', padding: '50px' }}>No temporal data available to display.</div>;
+        // Use the defined dashboard loading/error style for empty data message
+        return <div className="loading-container" style={{height: '100%', fontSize: '1rem'}}>No temporal data available to display.</div>;
     }
 
-    // Assign colors to the top 5 genres for consistent visualization
-    const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#FF8042', '#0088FE'];
+    // Assign theme-aligned colors to the top 8 genres for consistent visualization.
+    // Expanded color palette for 8 distinct lines
+    const COLORS = [
+        'var(--primary-color)',   // Color 1
+        'var(--secondary-color)',  // Color 2
+        '#ffc658',                 // Gold (Color 3)
+        '#FF8042',                 // Orange (Color 4)
+        '#82ca9d',                 // Green (Color 5)
+        '#37c7ff',                 // Light Blue (Color 6)
+        '#ff6590',                 // Pink (Color 7)
+        '#a157e8'                  // Purple (Color 8)
+    ];
 
-    // Filter data to only include the top 5 genres to avoid clutter
+    // Filter data to only include the top genres (up to 8) to avoid clutter
     const filteredData = data.map(item => {
         const newItem = { date: item.date };
         topGenres.forEach(genre => {
@@ -34,29 +44,74 @@ function TemporalLineChart({ data, topGenres }) {
         return newItem;
     });
 
+    // Custom formatter for X-Axis to display Day/Month
+    const formatXAxis = (tickItem) => {
+        // tickItem is in YYYY-MM-DD format
+        try {
+            const dateParts = tickItem.split('-');
+            const month = dateParts[1];
+            const day = dateParts[2];
+            return `${day}/${month}`;
+        } catch (e) {
+            return tickItem; // Fallback
+        }
+    };
+
+    // Custom Tooltip for the Line Chart
+    const CustomTooltip = ({ active, payload, label }) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="p-3 bg-white border border-gray-300 rounded-lg shadow-xl text-sm">
+                    <p className="font-bold text-lg mb-1 text-gray-800">Collection Date: {formatXAxis(label)}</p>
+                    {payload.map((p, index) => (
+                        <p key={index} style={{ color: p.stroke }}>
+                            {p.name}: <span className="font-semibold">{p.value.toLocaleString()}</span> games
+                        </p>
+                    ))}
+                </div>
+            );
+        }
+        return null;
+    };
+
+
     return (
-        <div style={{ height: 450, width: '100%', marginBottom: '20px', marginTop: '30px' }}>
-            <h3 style={{ textAlign: 'center', marginBottom: '15px' }}>Growth Trend: Monthly Added Count for Top 5 Genres</h3>
+        // CRITICAL: Using the external CSS class for responsive sizing
+        <div className="chart-responsive-wrapper">
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                     data={filteredData}
-                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
                 >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis label={{ value: 'Games Added (Count)', angle: -90, position: 'insideLeft' }} />
-                    <Tooltip />
-                    <Legend />
+                    <XAxis
+                        dataKey="date"
+                        // Theme-aligned tick color
+                        tick={{ fontSize: 12, fill: 'var(--text-light)' }}
+                        dy={10}
+                        tickFormatter={formatXAxis}
+                        interval="preserveStart"
+                    />
+                    <YAxis
+                        // Theme-aligned label and tick color
+                        label={{ value: 'Daily Activity Count (Games Processed)', angle: -90, position: 'insideLeft', style: { fontSize: '14px', fontWeight: 'bold', fill: 'var(--text-light)' } }}
+                        tick={{ fontSize: 12, fill: 'var(--text-light)' }}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    {/* Theme-aligned legend color */}
+                    <Legend wrapperStyle={{ fontSize: '13px', paddingTop: '10px', color: 'var(--text-dark)' }} />
 
-                    {/* Render a Line for each of the top 5 genres */}
+                    {/* Render a Line for each of the top 8 genres */}
                     {topGenres.map((genre, index) => (
                         <Line
                             key={genre}
                             type="monotone"
                             dataKey={genre}
-                            stackId="a" // Use stackId if you want a stacked area chart, or remove for simple lines
+                            // Removed stackId
                             stroke={COLORS[index % COLORS.length]}
-                            activeDot={{ r: 8 }}
+                            strokeWidth={1}
+                            activeDot={{ r: 6 }}
+                            dot={{ r: 3 }}
                         />
                     ))}
                 </LineChart>

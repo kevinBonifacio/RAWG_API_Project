@@ -1,8 +1,7 @@
 from google.cloud import storage
 
 BUCKET_NAME = "rawg-api-storage-bonifacio"
-DESTINATION_FOLDER = "C:/Users/kevin/IdeaProjects/RAWG_API_Project/rawData"
-
+DESTINATION_FOLDER = "C:/Users/kevin/IdeaProjects/RAWG_API_Project/backend/rawData"
 
 def download_csvs():
     client = storage.Client()

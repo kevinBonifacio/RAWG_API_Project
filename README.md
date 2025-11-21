@@ -33,7 +33,7 @@ You must run two separate terminal windows simultaneously.
 This application reads data, it does not fetch it from the API. You must ensure your data is present locally first.
 
 1. **Run Cloud Function:** Ensure your Google Cloud Function (`main.py`) has been running and saving data to your GCS bucket.
-2. **Download Data:** Run your local Python script (`download_csvs.py`) to download all the CSV files from Google Cloud Storage into the `backend/rawData/` folder.
+2. **Download Data:** Run your local Python script (`utils/gcp_download.py`) to download all the CSV files from Google Cloud Storage into the `backend/rawData/` folder.
 
 ### **Step 2: Run the Backend (Data Server)**
 

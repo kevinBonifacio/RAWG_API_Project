@@ -1,0 +1,146 @@
+/* Global Dashboard Settings */
+:root {
+    --primary-color: #4B0082;
+    --secondary-color: #00CED1;
+    --bg-color: #f4f7f6;
+    --card-bg: #ffffff;
+    --text-dark: #333333;
+    --text-light: #666666;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --radius: 12px;
+}
+
+body {
+    background-color: var(--bg-color);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    margin: 0;
+    padding: 0;
+    text-align: left;
+}
+
+.dashboard-container {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* --- Header Section --- */
+.dashboard-header {
+    text-align: left;
+    margin-bottom: 40px;
+    /* FIX: Remove inner padding, rely entirely on #root padding */
+    padding: 0;
+}
+
+.dashboard-title {
+    color: var(--primary-color);
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.stats-banner {
+    display: inline-block;
+    background-color: var(--card-bg);
+    padding: 15px 30px;
+    border-radius: 50px;
+    box-shadow: var(--shadow);
+    border-left: 5px solid var(--secondary-color);
+    margin-left: 0;
+}
+
+.stats-text {
+    margin: 0;
+    color: var(--text-light);
+    font-size: 1.1rem;
+}
+
+.stats-text strong {
+    color: var(--text-dark);
+    font-size: 1.3rem;
+}
+
+/* --- Grid Layout --- */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 30px;
+    padding: 0 0 20px 0;
+    text-align: left;
+}
+
+.chart-card.double-width {
+    grid-column: 1 / -1;
+}
+
+/* --- Card Component --- */
+.chart-card {
+    background-color: var(--card-bg);
+    /* FIX: Restore border radius for a polished look */
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    /* Internal padding for content is kept */
+    padding: 20px;
+    /* FIX: Restore transition for the hover effect */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chart-card:hover {
+    /* FIX: Restore the subtle lift on hover */
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+.chart-title {
+    color: var(--text-dark);
+    font-size: 1.25rem;
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    /* FIX: Remove edge-to-edge hacks, content is naturally contained */
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+}
+
+/* Add a small colored dot before titles */
+.chart-title::before {
+    content: '';
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background-color: var(--secondary-color);
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+/* --- Chart Wrapper (REQUIRED FOR BIGGER GRAPHS) --- */
+.chart-responsive-wrapper {
+    /* Set a large, consistent height for all charts */
+    height: 750px;
+    width: 100%;
+}
+
+/* --- Loading / Error States --- */
+.loading-container, .error-container {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+}
+
+.error-box {
+    background-color: #ffebee;
+    color: #c62828;
+    padding: 20px 40px;
+    border-radius: var(--radius);
+    border: 1px solid #ffcdd2;
+    box-shadow: var(--shadow);
+}
