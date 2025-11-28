@@ -3,9 +3,9 @@ import { usePapaParse } from 'react-papaparse';
 
 const LOCAL_SERVER_BASE_URL = 'http://localhost:8000/';
 
-// --- Helper Functions (Ensuring 30 days ending yesterday) ---
+// --- Helper Functions ---
 
-// Helper to format Date object to YYYY-MM-DD string using local time components
+// Helper to format Date object to YYYY-MM-DD string
 const formatDate = (date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -13,29 +13,24 @@ const formatDate = (date) => {
     return `${year}-${month}-${day}`;
 };
 
-// Get today's date object set to midnight local time
-const getToday = () => {
-    const today = new Date();
-    // Setting time to 00:00:00 ensures we don't include today's partial data
-    today.setHours(0, 0, 0, 0);
-    return today;
-};
-
-// Calculate the start date (30 days before today's midnight)
-const getThirtyDaysAgo = () => {
-    const date = getToday();
-    date.setDate(date.getDate() - 30); // Subtract 30 days
-    return date;
-};
-
-// Generates an array of date strings (YYYY-MM-DD) for the last 30 days ending yesterday.
-const getDateRange = (start) => {
+/**
+ * Calculates the last 30-day range strings ending today (exclusive).
+ * @returns {string[]} Array of 30 date strings (YYYY-MM-DD).
+ */
+const getFixed30DayRange = () => {
     const dateArray = [];
-    let currentDate = new Date(start);
-    const today = getToday();
 
-    // Loop as long as the current date is strictly less than today (i.e., includes yesterday)
-    while (currentDate < today) {
+    // The end date is today at midnight (exclusive end date for the loop)
+    const end = new Date(new Date().setHours(0, 0, 0, 0));
+
+    // The start date is 30 days ago (inclusive)
+    const start = new Date(end);
+    start.setDate(end.getDate() - 30);
+
+    let currentDate = new Date(start);
+
+    // Loop from 30 days ago up to (but not including) today
+    while (currentDate < end) {
         dateArray.push(formatDate(currentDate));
         currentDate.setDate(currentDate.getDate() + 1);
     }
@@ -66,7 +61,6 @@ const processGenreData = (data) => {
         });
     });
 
-    // Slicing to TOP 10 GENRES
     return Object.keys(genreCounts).map(name => ({
         name: name,
         value: genreCounts[name],
@@ -89,7 +83,6 @@ const processPlatformData = (data) => {
         });
     });
 
-    // Sort and take top 10
     return Object.keys(platformCounts).map(name => ({
         name: name,
         value: platformCounts[name],
@@ -125,32 +118,24 @@ const processQualityData = (data) => {
         });
     });
 
-    // Convert to Recharts format
     return Object.keys(genreAggregates)
-        .filter(name => genreAggregates[name].count >= 10) // Filter out genres with few entries for better averages
+        .filter(name => genreAggregates[name].count >= 10)
         .map(name => ({
             name: name,
-            // Calculate average rating
             avgRating: parseFloat((genreAggregates[name].totalRating / genreAggregates[name].count).toFixed(2)),
-            // Use total added count as a measure of popularity volume
             totalAdded: genreAggregates[name].totalAdded,
-            // Include the game count for the Z-Axis (dot size)
             count: genreAggregates[name].count,
         }))
-        // Ensure totalAdded is always positive for the logarithmic scale
         .filter(genre => genre.totalAdded > 0)
-        .sort((a, b) => b.avgRating - a.avgRating) // Sort by rating
-        .slice(0, 15); // Show top 15 genres for this view
+        .sort((a, b) => b.avgRating - a.avgRating)
+        .slice(0, 15);
 };
 
-// --- DATA PROCESSING FUNCTION: Temporal Trends (Using null for line breaks) ---
-const processTemporalData = (data) => {
+// --- DATA PROCESSING FUNCTION: Temporal Trends ---
+const processTemporalData = (data, dateRange) => {
     if (!data || data.length === 0) return { temporalData: [], topGenres: [] };
 
-    // 1. Get the Top 5 genres from the entire dataset for plotting
     const topGenres = processGenreData(data).slice(0, 5).map(g => g.name);
-
-    // 2. Calculate Daily Activity Map (only includes dates where data was actually collected)
     const dateGenreMap = {};
 
     data.forEach(game => {
@@ -165,31 +150,21 @@ const processTemporalData = (data) => {
         }
 
         genres.forEach(genre => {
-            // Only count games belonging to the TOP 5
             if (topGenres.includes(genre)) {
                 dateGenreMap[dateKey][genre] = (dateGenreMap[dateKey][genre] || 0) + 1;
             }
         });
     });
 
-    // 3. Get the full range of date keys (YYYY-MM-DD) for the last 30 days
-    const START_DATE = getThirtyDaysAgo();
-    const dateRange = getDateRange(START_DATE);
-
-    // 4. Map the full date range, explicitly setting missing days to null
     const finalTemporalData = dateRange.map(dateKey => {
         const existingData = dateGenreMap[dateKey];
 
         if (existingData) {
-            // Case A: Data was found for this date.
-            // Fill missing genres with 0 counts.
             topGenres.forEach(genre => {
                 existingData[genre] = existingData[genre] || 0;
             });
             return existingData;
         } else {
-            // Case B: Data was NOT found for this date (404, empty CSV, or zero activity).
-            // Use null values for the genre counts to force a line break in Recharts.
             const nullData = { date: dateKey };
             topGenres.forEach(genre => {
                 nullData[genre] = null; // Forces line break (gap)
@@ -208,7 +183,6 @@ const processTemporalData = (data) => {
 const processGenrePlatformData = (data) => {
     if (!data || data.length === 0) return [];
 
-    // 1. Get top 10 genres and platforms using the already-defined functions
     const topGenres = processGenreData(data).map(g => g.name);
     const topPlatforms = processPlatformData(data).map(p => p.name);
 
@@ -219,24 +193,22 @@ const processGenrePlatformData = (data) => {
         const platforms = getCleanedArray(game.Platforms);
 
         genres.forEach(genre => {
-            if (!topGenres.includes(genre)) return; // Skip if not top 10
+            if (!topGenres.includes(genre)) return;
             if (!matrix[genre]) matrix[genre] = {};
 
             platforms.forEach(platform => {
-                if (!topPlatforms.includes(platform)) return; // Skip if not top 10
+                if (!topPlatforms.includes(platform)) return;
                 if (!matrix[genre][platform]) matrix[genre][platform] = 0;
                 matrix[genre][platform] += 1;
             });
         });
     });
 
-    // 2. Convert matrix into array format for Recharts
     const result = Object.keys(matrix).map(genre => ({
         genre,
         ...matrix[genre],
     }));
 
-    // 3. Sort genres by total count so chart looks clean
     return result.sort((a, b) => {
         const sumA = Object.values(a).reduce((acc, val) => (typeof val === "number" ? acc + val : acc), 0);
         const sumB = Object.values(b).reduce((acc, val) => (typeof val === "number" ? acc + val : acc), 0);
@@ -245,21 +217,26 @@ const processGenrePlatformData = (data) => {
 };
 
 
-// --- Custom Hook ---
+// --- Custom Hook (Fixed Range) ---
+/**
+ * Custom hook for fetching and processing game data for the last 30 days
+ * ending yesterday.
+ */
 export const useGameData = () => {
     const [allGameData, setAllGameData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const { readString } = usePapaParse();
 
-    // --- DYNAMIC DATE RANGE CALCULATION (Last 30 Days of Collection) ---
-    const START_DATE = getThirtyDaysAgo();
-    // Get the full list of YYYY-MM-DD dates we expect to see
-    const expectedDates = getDateRange(START_DATE);
+    // Calculate the fixed 30-day range internally
+    const expectedDates = getFixed30DayRange();
+    // The date *after* the last file fetched (used for display purposes only)
+    const endDateDisplay = formatDate(new Date(new Date().setHours(0, 0, 0, 0)));
 
     useEffect(() => {
         const fetchAllData = async () => {
             setLoading(true);
+            setError(null);
             const combinedData = [];
 
             for (const dateKey of expectedDates) {
@@ -268,7 +245,7 @@ export const useGameData = () => {
                 const collectionDate = dateKey; // YYYY-MM-DD
 
                 try {
-                    // Implement exponential backoff for fetching the CSV
+                    // Exponential backoff logic for fetching the CSV
                     let response = null;
                     let success = false;
                     let retryCount = 0;
@@ -282,29 +259,26 @@ export const useGameData = () => {
                                 break;
                             }
                         } catch (e) {
-                            console.warn(`Fetch attempt ${retryCount + 1} failed for ${filename}. Retrying...`);
+                            // Silent retry
                         }
-                        // Only retry if it's not a 404/403 (file not found)
                         if (!response || response.status >= 500) {
                             const delay = Math.pow(2, retryCount) * 1000;
                             await new Promise(resolve => setTimeout(resolve, delay));
                             retryCount++;
                         } else {
-                            // If it's a client error (e.g., 404), stop retrying and warn/skip
                             break;
                         }
                     }
 
                     if (!response || !response.ok) {
-                        console.warn(`File not found, failed to load, or empty: ${filename}. Skipping this date.`);
+                        console.warn(`File not found or failed: ${filename}. Skipping this date.`);
                         continue;
                     }
 
                     const csvText = await response.text();
 
-                    // If the CSV is empty (just headers or less), skip it.
                     if (csvText.split('\n').length <= 1) {
-                        console.warn(`CSV file ${filename} is effectively empty (only headers). Skipping this date.`);
+                        console.warn(`CSV file ${filename} is empty. Skipping this date.`);
                         continue;
                     }
 
@@ -313,7 +287,6 @@ export const useGameData = () => {
                         dynamicTyping: true,
                         skipEmptyLines: true,
                         complete: (results) => {
-                            // ATTACH COLLECTION DATE to each record
                             const dailyData = results.data
                                 .filter(item => Object.keys(item).length > 0)
                                 .map(item => ({
@@ -335,18 +308,16 @@ export const useGameData = () => {
             setAllGameData(combinedData);
             setLoading(false);
 
-            // We only set an error if NO data was found across the entire 30 days
             if (combinedData.length === 0) {
-                setError("No data found in the last 30 days. Please check if the Python server is running and data exists.");
+                const startDateDisplay = expectedDates[0] || 'N/A';
+                setError(`No data found for the 30-day window from ${startDateDisplay} to ${endDateDisplay}.`);
             }
         };
 
-        // Note: I removed [readString] from dependencies because it's stable,
-        // but included the dependency check to trigger on first render.
         fetchAllData();
     }, [readString]);
 
-    const temporalData = processTemporalData(allGameData);
+    const temporalData = processTemporalData(allGameData, expectedDates);
 
     return {
         topGenres: processGenreData(allGameData),
